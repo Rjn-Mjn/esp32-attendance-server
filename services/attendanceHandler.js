@@ -16,7 +16,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     // 1. Kiểm tra UID có tồn tại không
     const { recordset: uidRecords } = await pool
       .request()
-      .input("uid", sql.NVarChar(20), uid)
+      .input("uid", sql.NVarChar(20), UID)
       .query(`SELECT CardID FROM AttendanceCard WHERE UID = @uid`);
 
     if (uidRecords.length === 0) {
