@@ -1,3 +1,6 @@
+const { poolPromise, sql } = require("../db/sql");
+const moment = require("moment");
+
 async function handleAttendance({
   uid,
   timestamp,
