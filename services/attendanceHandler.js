@@ -56,7 +56,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
         SELECT A.ShiftID, A.OTStart, A.OTEnd, S.StartTime, S.Duration, ST.Interval
         FROM Attendance A
         JOIN Shift S ON A.ShiftID = S.ShiftID
-        JOIN ShiftType ST ON S.STID = ST.STID
+        JOIN ShiftType ST ON S.STID = ST.ST_ID
         WHERE A.AccountID = @AccountID AND A.date = @date
       `);
 
