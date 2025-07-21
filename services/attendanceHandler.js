@@ -1,6 +1,4 @@
 // services/attendanceHandler.js
-
-const sql = require("mssql");
 const dayjs = require("dayjs");
 const { poolPromise, sql } = require("../db/sql");
 
