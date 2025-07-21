@@ -10,7 +10,9 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "dayjs": "^1.11.13",
     "dotenv": "^17.2.0",
+    "luxon": "^3.7.1",
     "mssql": "^11.0.1",
     "net": "^1.0.2"
   }
