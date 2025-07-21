@@ -2,19 +2,28 @@ const net = require("net");
 const { handleAttendance } = require("./services/attendanceHandler");
 
 const server = net.createServer((socket) => {
-  let buffer = ""; // Để lưu message đến khi đủ
+  let buffer = "";
 
   socket.on("data", async (data) => {
     buffer += data.toString();
 
-    // Nếu ESP32 gửi kết thúc bằng newline thì xử lý
     let boundary = buffer.indexOf("\n");
     while (boundary !== -1) {
-      const message = buffer.substring(0, boundary).trim(); // lấy từng dòng JSON
-      buffer = buffer.substring(boundary + 1); // cắt phần đã xử lý
+      const message = buffer.substring(0, boundary).trim();
+      buffer = buffer.substring(boundary + 1);
 
       try {
-        const payload = JSON.parse(message); // phải là { uid, timestamp }
+        const raw = JSON.parse(message); // raw: { uid, timestamp }
+
+        // Bổ sung thêm IPAddress và UID
+        const payload = {
+          uid: raw.uid,
+          timestamp: raw.timestamp,
+          UID: raw.uid, // dùng làm UID trong AttendanceLog
+          IPAddress: socket.remoteAddress?.replace(/^.*:/, ""), // Lấy IP client
+          Note: null, // Nếu cần có thể thay đổi theo ý bạn
+        };
+
         await handleAttendance(payload);
         socket.write("Received\n");
       } catch (err) {
@@ -32,5 +41,5 @@ const server = net.createServer((socket) => {
 });
 
 server.listen(5000, () => {
-  console.log("Server is listening on port 5000");
+  console.log("✅ Server is listening on port 5000");
 });

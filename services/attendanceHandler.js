@@ -1,13 +1,15 @@
-const { poolPromise, sql } = require("../db/sql");
-const moment = require("moment");
-
-async function handleAttendance({ uid, timestamp }) {
+async function handleAttendance({
+  uid,
+  timestamp,
+  IPAddress = null,
+  Note = null,
+}) {
   const pool = await poolPromise;
 
   // 1. Kiểm tra UID có tồn tại không
   const { recordset: uidRecords } = await pool
     .request()
-    .input("uid", sql.NVarChar, uid)
+    .input("uid", sql.NVarChar(20), uid)
     .query(`SELECT CardID FROM AttendanceCard WHERE UID = @uid`);
 
   if (uidRecords.length === 0) {
@@ -20,7 +22,7 @@ async function handleAttendance({ uid, timestamp }) {
   // 2. Tìm account tương ứng
   const { recordset: accountRecords } = await pool
     .request()
-    .input("cardID", sql.VarChar(20), cardID) // ✅ SỬA chỗ này
+    .input("cardID", sql.VarChar(10), cardID)
     .query(`SELECT AccountID FROM Account WHERE CardID = @cardID`);
 
   if (accountRecords.length === 0) {
@@ -33,15 +35,12 @@ async function handleAttendance({ uid, timestamp }) {
   // 3. Ghi vào AttendanceLog
   await pool
     .request()
-    .input("accountID", sql.Int, accountID)
-    .input("scanTime", sql.DateTime, timestamp).query(`
-            INSERT INTO AttendanceLog (AccountID, ScanTime)
-            VALUES (@accountID, @scanTime)
-        `);
+    .input("UID", sql.VarChar(20), uid)
+    .input("IPAddress", sql.VarChar(45), IPAddress)
+    .input("Note", sql.NVarChar(255), Note).query(`
+      INSERT INTO AttendanceLog (UID, IPAddress, Note)
+      VALUES (@UID, @IPAddress, @Note)
+    `);
 
   console.log(`✅ Ghi log chấm công cho accountID ${accountID}`);
 }
-
-module.exports = {
-  handleAttendance,
-};
