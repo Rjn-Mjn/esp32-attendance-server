@@ -2,7 +2,7 @@
 
 const sql = require("mssql");
 const dayjs = require("dayjs");
-const db = require("../db/sql");
+const { poolPromise, sql } = require("../db/sql");
 
 // 1 phút là 60 * 1000 ms
 const MS_IN_MINUTE = 60000;
@@ -13,7 +13,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
   const scanTimeStr = scanTime.format("HH:mm:ss");
 
   try {
-    const pool = await db();
+    const pool = await poolPromise;
 
     // 1. Lấy AccountID dựa vào UID
     const accountResult = await pool
