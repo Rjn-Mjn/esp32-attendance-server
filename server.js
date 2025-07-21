@@ -1,5 +1,5 @@
 const net = require("net");
-const { handleAttendance } = require("./services/attendanceHandler");
+const handleAttendance = require("./services/attendanceHandler");
 
 const server = net.createServer((socket) => {
   let buffer = "";
