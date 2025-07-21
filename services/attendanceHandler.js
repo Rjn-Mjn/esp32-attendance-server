@@ -20,7 +20,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       .query(`SELECT CardID FROM AttendanceCard WHERE UID = @uid`);
 
     if (uidRecords.length === 0) {
-      console.log(`UID ${uid} không tồn tại trong hệ thống.`);
+      console.log(`UID ${UID} không tồn tại trong hệ thống.`);
       await logUnrecognized(pool, UID, timestamp, IPAddress, "UID not found");
       return;
     }
@@ -46,12 +46,12 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       return;
     }
 
-    const accountID = accountRecords[0].AccountID;
+    const AccountID = accountRecords[0].AccountID;
 
     // 2. Lấy ca hôm nay
     const attendanceResult = await pool
       .request()
-      .input("AccountID", sql.Int, AccountID)
+      .input("AccountID", sql.VarChar(100), AccountID)
       .input("date", sql.Date, scanDate).query(`
         SELECT A.ShiftID, A.OTStart, A.OTEnd, S.StartTime, S.Duration, ST.Interval
         FROM Attendance A
