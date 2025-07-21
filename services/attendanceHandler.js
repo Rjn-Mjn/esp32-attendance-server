@@ -20,7 +20,7 @@ async function handleAttendance({ uid, timestamp }) {
   // 2. Tìm account tương ứng
   const { recordset: accountRecords } = await pool
     .request()
-    .input("cardID", sql.Int, cardID)
+    .input("cardID", sql.VarChar(20), cardID) // ✅ SỬA chỗ này
     .query(`SELECT AccountID FROM Account WHERE CardID = @cardID`);
 
   if (accountRecords.length === 0) {
@@ -39,10 +39,7 @@ async function handleAttendance({ uid, timestamp }) {
             VALUES (@accountID, @scanTime)
         `);
 
-  console.log(`Ghi log chấm công cho accountID ${accountID}`);
-
-  // (Tuỳ chọn) 4. Xử lý cập nhật Attendance nếu đúng thời điểm
-  // => Để dành cho giai đoạn 2.5 hoặc khi hết ca
+  console.log(`✅ Ghi log chấm công cho accountID ${accountID}`);
 }
 
 module.exports = {
