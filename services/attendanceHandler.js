@@ -13,18 +13,40 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
   try {
     const pool = await poolPromise;
 
-    // 1. Lấy AccountID dựa vào UID
-    const accountResult = await pool
+    // 1. Kiểm tra UID có tồn tại không
+    const { recordset: uidRecords } = await pool
       .request()
-      .input("uid", sql.VarChar, UID)
-      .query("SELECT AccountID FROM Accounts WHERE UID = @uid");
+      .input("uid", sql.NVarChar(20), uid)
+      .query(`SELECT CardID FROM AttendanceCard WHERE UID = @uid`);
 
-    if (accountResult.recordset.length === 0) {
+    if (uidRecords.length === 0) {
+      console.log(`UID ${uid} không tồn tại trong hệ thống.`);
       await logUnrecognized(pool, UID, timestamp, IPAddress, "UID not found");
       return;
     }
 
-    const AccountID = accountResult.recordset[0].AccountID;
+    const cardID = uidRecords[0].CardID;
+
+    // 1.2 Tìm Account tương ứng
+    const { recordset: accountRecords } = await pool
+      .request()
+      .input("cardID", sql.VarChar(10), cardID)
+      .query(`SELECT AccountID FROM Account WHERE CardID = @cardID`);
+
+    if (accountRecords.length === 0) {
+      console.log(`Không tìm thấy Account cho CardID ${cardID}`);
+      await logUnrecognized(
+        pool,
+        UID,
+        timestamp,
+        IPAddress,
+        "Account not found"
+      );
+
+      return;
+    }
+
+    const accountID = accountRecords[0].AccountID;
 
     // 2. Lấy ca hôm nay
     const attendanceResult = await pool
@@ -151,3 +173,133 @@ async function logUnrecognized(pool, UID, timestamp, IPAddress, reason) {
 }
 
 module.exports = handleAttendance;
+
+// // attendanceHandler.js
+// const { poolPromise, sql } = require("../db/sql");
+
+// async function handleAttendance({
+//   uid,
+//   timestamp,
+//   IPAddress = null,
+//   Note = null,
+// }) {
+//   const pool = await poolPromise;
+
+//   let isRecognized = 0; // Default: không hợp lệ
+
+//   // 1. Kiểm tra UID có tồn tại không
+//   const { recordset: uidRecords } = await pool
+//     .request()
+//     .input("uid", sql.NVarChar(20), uid)
+//     .query(`SELECT CardID FROM AttendanceCard WHERE UID = @uid`);
+
+//   if (uidRecords.length === 0) {
+//     console.log(`UID ${uid} không tồn tại trong hệ thống.`);
+//     await logToAttendanceLog(uid, IPAddress, Note, isRecognized); // Log thất bại
+//     return;
+//   }
+
+//   const cardID = uidRecords[0].CardID;
+
+//   // 2. Tìm Account tương ứng
+//   const { recordset: accountRecords } = await pool
+//     .request()
+//     .input("cardID", sql.VarChar(10), cardID)
+//     .query(`SELECT AccountID FROM Account WHERE CardID = @cardID`);
+
+//   if (accountRecords.length === 0) {
+//     console.log(`Không tìm thấy Account cho CardID ${cardID}`);
+//     await logToAttendanceLog(uid, IPAddress, Note, isRecognized);
+//     return;
+//   }
+
+//   const accountID = accountRecords[0].AccountID;
+//   isRecognized = 1; // Đã xác định được Account
+
+//   // 3. Tìm Attendance tương ứng trong ngày hôm đó
+//   const now = new Date(timestamp || Date.now());
+//   const dateOnly = now.toISOString().split("T")[0];
+
+//   const { recordset: shiftRecords } = await pool
+//     .request()
+//     .input("accountID", sql.VarChar(100), accountID)
+//     .input("date", sql.Date, dateOnly).query(`
+//       SELECT ShiftID, OTStart, OTEnd
+//       FROM Attendance
+//       WHERE AccountID = @accountID AND [date] = @date AND isDeleted = 0
+//     `);
+
+//   if (shiftRecords.length === 0) {
+//     console.log(
+//       `Không có ca nào cho Account ${accountID} vào ngày ${dateOnly}`
+//     );
+//     await logToAttendanceLog(uid, IPAddress, Note, isRecognized);
+//     return;
+//   }
+
+//   // 4. Tìm ca phù hợp nhất dựa theo thời gian
+//   let selectedShift = null;
+//   const nowMs = now.getTime();
+
+//   for (const shift of shiftRecords) {
+//     const start = shift.OTStart?.getTime();
+//     const end = shift.OTEnd?.getTime();
+
+//     if (start && !end && nowMs >= start) {
+//       selectedShift = { ...shift, action: "checkout" };
+//       break;
+//     }
+
+//     if (!start && !end) {
+//       selectedShift = { ...shift, action: "checkin" };
+//       break;
+//     }
+//   }
+
+//   if (!selectedShift) {
+//     console.log(`❌ Không tìm được ca phù hợp để chấm công cho ${accountID}`);
+//     await logToAttendanceLog(uid, IPAddress, Note, isRecognized);
+//     return;
+//   }
+
+//   const { ShiftID, action } = selectedShift;
+
+//   // 5. Cập nhật Attendance: OTStart hoặc OTEnd
+//   const updateQuery = `
+//     UPDATE Attendance
+//     SET ${action === "checkin" ? "OTStart" : "OTEnd"} = @time
+//     WHERE AccountID = @accountID AND ShiftID = @shiftID AND [date] = @date
+//   `;
+
+//   await pool
+//     .request()
+//     .input("time", sql.DateTime, now)
+//     .input("accountID", sql.VarChar(100), accountID)
+//     .input("shiftID", sql.VarChar(100), ShiftID)
+//     .input("date", sql.Date, dateOnly)
+//     .query(updateQuery);
+
+//   console.log(
+//     `✅ Đã ${
+//       action === "checkin" ? "vào ca" : "ra ca"
+//     } cho ${accountID} - Shift ${ShiftID}`
+//   );
+//   await logToAttendanceLog(uid, IPAddress, Note, isRecognized);
+// }
+
+// // Hàm ghi AttendanceLog
+// async function logToAttendanceLog(uid, ip, note, isRecognized) {
+//   const pool = await poolPromise;
+
+//   await pool
+//     .request()
+//     .input("UID", sql.VarChar(20), uid)
+//     .input("IPAddress", sql.VarChar(45), ip)
+//     .input("Note", sql.NVarChar(255), note)
+//     .input("isRecognized", sql.Bit, isRecognized).query(`
+//       INSERT INTO AttendanceLog (UID, IPAddress, Note, isRecognized)
+//       VALUES (@UID, @IPAddress, @Note, @isRecognized)
+//     `);
+// }
+
+// module.exports = handleAttendance;
