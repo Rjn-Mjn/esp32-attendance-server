@@ -47,3 +47,5 @@ async function handleAttendance({
 
   console.log(`✅ Ghi log chấm công cho accountID ${accountID}`);
 }
+
+module.exports = handleAttendance; // 🔥 Thêm dòng này
