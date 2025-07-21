@@ -1,28 +1,33 @@
 const net = require("net");
 const { handleAttendance } = require("./services/attendanceHandler");
 
-server.on("connection", (socket) => {
-  let buffer = "";
+const server = net.createServer((socket) => {
+  let buffer = ""; // Để lưu message đến khi đủ
 
-  socket.on("data", (data) => {
+  socket.on("data", async (data) => {
     buffer += data.toString();
 
-    try {
-      const json = JSON.parse(buffer); // Nếu parse được thì tiếp tục
-      buffer = ""; // Clear buffer nếu thành công
+    // Nếu ESP32 gửi kết thúc bằng newline thì xử lý
+    let boundary = buffer.indexOf("\n");
+    while (boundary !== -1) {
+      const message = buffer.substring(0, boundary).trim(); // lấy từng dòng JSON
+      buffer = buffer.substring(boundary + 1); // cắt phần đã xử lý
 
-      console.log("✅ JSON Received:", json);
-      handleAttendance(json); // xử lý tiếp
-    } catch (e) {
-      // Nếu lỗi là do chưa đủ JSON → đợi thêm data
-      if (e.message.includes("Unexpected end of JSON input")) {
-        return;
+      try {
+        const payload = JSON.parse(message); // phải là { uid, timestamp }
+        await handleAttendance(payload);
+        socket.write("Received\n");
+      } catch (err) {
+        console.error("Parse/Handle Error:", err);
+        socket.write("Error processing data\n");
       }
 
-      // Nếu là lỗi khác → in ra
-      console.error("❌ JSON Parse Error:", e);
-      buffer = ""; // Clear buffer nếu là lỗi thật sự
+      boundary = buffer.indexOf("\n");
     }
+  });
+
+  socket.on("error", (err) => {
+    console.error("Socket Error:", err);
   });
 });
 
