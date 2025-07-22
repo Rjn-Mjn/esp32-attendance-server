@@ -88,8 +88,8 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     ) {
       await pool
         .request()
-        .input("AccountID", sql.Int, AccountID)
-        .input("ShiftID", sql.Int, shift.ShiftID)
+        .input("AccountID", sql.VarChar(100), AccountID)
+        .input("ShiftID", sql.VarChar(100), shift.ShiftID)
         .input("OTStart", sql.DateTime, timestamp).query(`
           UPDATE Attendance SET OTStart = @OTStart
           WHERE AccountID = @AccountID AND ShiftID = @ShiftID
@@ -101,8 +101,8 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     if (!shift.OTEnd && scanTime.isAfter(checkOutStart)) {
       await pool
         .request()
-        .input("AccountID", sql.Int, AccountID)
-        .input("ShiftID", sql.Int, shift.ShiftID)
+        .input("AccountID", sql.VarChar(100), AccountID)
+        .input("ShiftID", sql.VarChar(100), shift.ShiftID)
         .input("OTEnd", sql.DateTime, timestamp).query(`
           UPDATE Attendance SET OTEnd = @OTEnd
           WHERE AccountID = @AccountID AND ShiftID = @ShiftID
@@ -113,8 +113,8 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     // 5. Xác định Status nếu có đủ OTStart và OTEnd
     const getStatusResult = await pool
       .request()
-      .input("AccountID", sql.Int, AccountID)
-      .input("ShiftID", sql.Int, shift.ShiftID).query(`
+      .input("AccountID", sql.VarChar(100), AccountID)
+      .input("ShiftID", sql.VarChar(100), shift.ShiftID).query(`
         SELECT OTStart, OTEnd FROM Attendance
         WHERE AccountID = @AccountID AND ShiftID = @ShiftID
       `);
@@ -132,9 +132,9 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
 
       await pool
         .request()
-        .input("AccountID", sql.Int, AccountID)
-        .input("ShiftID", sql.Int, shift.ShiftID)
-        .input("status", sql.VarChar, status).query(`
+        .input("AccountID", sql.VarChar(100), AccountID)
+        .input("ShiftID", sql.VarChar(100), shift.ShiftID)
+        .input("status", sql.VarChar(50), status).query(`
           UPDATE Attendance SET status = @status
           WHERE AccountID = @AccountID AND ShiftID = @ShiftID
         `);
@@ -143,11 +143,11 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     // 6. Ghi log vào AttendanceLog
     await pool
       .request()
-      .input("UID", sql.VarChar, UID)
+      .input("UID", sql.VarChar(20), UID)
       .input("ScanTime", sql.DateTime, timestamp)
-      .input("IPAddress", sql.VarChar, IPAddress)
+      .input("IPAddress", sql.VarChar(45), IPAddress)
       .input("IsRecognized", sql.Bit, 1)
-      .input("Note", sql.NVarChar, Note).query(`
+      .input("Note", sql.NVarChar(255), Note).query(`
         INSERT INTO AttendanceLog (UID, ScanTime, IPAddress, IsRecognized, Note)
         VALUES (@UID, @ScanTime, @IPAddress, @IsRecognized, @Note)
       `);
@@ -165,11 +165,11 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
 async function logUnrecognized(pool, UID, timestamp, IPAddress, reason) {
   await pool
     .request()
-    .input("UID", sql.VarChar, UID)
+    .input("UID", sql.VarChar(20), UID)
     .input("ScanTime", sql.DateTime, timestamp)
-    .input("IPAddress", sql.VarChar, IPAddress)
+    .input("IPAddress", sql.VarChar(45), IPAddress)
     .input("IsRecognized", sql.Bit, 0)
-    .input("Note", sql.NVarChar, reason).query(`
+    .input("Note", sql.NVarChar(225), reason).query(`
       INSERT INTO AttendanceLog (UID, ScanTime, IPAddress, IsRecognized, Note)
       VALUES (@UID, @ScanTime, @IPAddress, @IsRecognized, @Note)
     `);
