@@ -40,6 +40,10 @@ const server = net.createServer((socket) => {
   });
 });
 
+// server.js
+const { startTcpServer } = require("./tcp/tcpServer");
+startTcpServer(); // Bắt đầu lắng nghe từ ESP32
+
 server.listen(5000, () => {
   console.log("✅ Server is listening on port 5000");
 });
