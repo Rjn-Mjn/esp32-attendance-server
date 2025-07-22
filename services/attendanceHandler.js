@@ -59,6 +59,8 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
         JOIN ShiftType ST ON S.STID = ST.ST_ID
         WHERE A.AccountID = @AccountID AND A.date = @date
       `);
+    console.log("Date scanned: " + scanDate);
+    console.log("AccountID: " + AccountID);
 
     if (attendanceResult.recordset.length === 0) {
       await logUnrecognized(pool, UID, timestamp, IPAddress, "No shift found");
