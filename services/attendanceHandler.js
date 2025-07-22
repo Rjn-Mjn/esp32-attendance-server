@@ -65,6 +65,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       `);
     console.log("Date scanned: " + scanDate);
     console.log("AccountID: " + AccountID);
+    console.log("Ca: " + shift.ShiftID);
 
     if (attendanceResult.recordset.length === 0) {
       await logUnrecognized(pool, UID, timestamp, IPAddress, "No shift found");
@@ -72,6 +73,8 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     }
 
     const shift = attendanceResult.recordset[0];
+    console.log(shift);
+
     const shiftStart = dayjs(`${scanDate}T${shift.StartTime}`);
     const shiftEnd = shiftStart.add(shift.Duration, "minute");
     const intervalMs = shift.Interval * MS_IN_MINUTE;
@@ -84,10 +87,16 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     let updated = false;
 
     // 3. Cập nhật OTStart nếu nằm trong thời gian check-in
+    console.log("Thời điểm OTStart: " + shift.OTStart);
+    console.log("Thời gian quét" + scanTime);
+    console.log(scanTime.isBetween(checkInStart, checkInEnd, null, "[]"));
+
     if (
       !shift.OTStart &&
       scanTime.isBetween(checkInStart, checkInEnd, null, "[]")
     ) {
+      console.log("Chưa có OTStart và thời gian quét thỏa điều kiện");
+
       await pool
         .request()
         .input("AccountID", sql.VarChar(100), AccountID)
