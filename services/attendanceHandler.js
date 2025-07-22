@@ -63,9 +63,6 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
         JOIN ShiftType ST ON S.STID = ST.ST_ID
         WHERE A.AccountID = @AccountID AND A.date = @date
       `);
-    console.log("Date scanned: " + scanDate);
-    console.log("AccountID: " + AccountID);
-    console.log("Ca: " + shift.ShiftID);
 
     if (attendanceResult.recordset.length === 0) {
       await logUnrecognized(pool, UID, timestamp, IPAddress, "No shift found");
@@ -74,6 +71,9 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
 
     const shift = attendanceResult.recordset[0];
     console.log(shift);
+    console.log("Date scanned: " + scanDate);
+    console.log("AccountID: " + AccountID);
+    console.log("Ca: " + shift.ShiftID);
 
     const shiftStart = dayjs(`${scanDate}T${shift.StartTime}`);
     const shiftEnd = shiftStart.add(shift.Duration, "minute");
