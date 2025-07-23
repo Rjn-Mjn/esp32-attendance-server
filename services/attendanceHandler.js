@@ -6,11 +6,13 @@ const isSameOrBefore = require("dayjs/plugin/isSameOrBefore");
 const { poolPromise, sql } = require("../db/sql");
 const utc = require("dayjs/plugin/utc");
 const timezone = require("dayjs/plugin/timezone");
+const isAfter = require("dayjs/plugin/isAfter");
 dayjs.extend(isBetween);
 dayjs.extend(isSameOrBefore);
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(duration);
+dayjs.extend(isAfter);
 
 // 1 phút là 60 * 1000 ms
 const MS_IN_MINUTE = 60000;
