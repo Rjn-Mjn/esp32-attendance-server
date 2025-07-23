@@ -1,22 +1,27 @@
 // services/attendanceHandler.js
 const dayjs = require("dayjs");
 const duration = require("dayjs/plugin/duration");
+dayjs.extend(duration);
 const isBetween = require("dayjs/plugin/isBetween");
+dayjs.extend(isBetween);
 const isSameOrBefore = require("dayjs/plugin/isSameOrBefore");
+dayjs.extend(isSameOrBefore);
 const { poolPromise, sql } = require("../db/sql");
 const utc = require("dayjs/plugin/utc");
-const timezone = require("dayjs/plugin/timezone");
-dayjs.extend(isBetween);
-dayjs.extend(isSameOrBefore);
 dayjs.extend(utc);
+const timezone = require("dayjs/plugin/timezone");
 dayjs.extend(timezone);
-dayjs.extend(duration);
 
 // 1 phút là 60 * 1000 ms
 const MS_IN_MINUTE = 60000;
 
 async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
+  if (!dayjs(timestamp).isValid()) {
+    console.error("❌ Invalid timestamp format:", timestamp);
+    return;
+  }
   const scanTime = dayjs.tz(timestamp, "Asia/Ho_Chi_Minh");
+
   const scanDate = scanTime.format("YYYY-MM-DD");
   const scanTimeStr = scanTime.format("HH:mm:ss");
 
@@ -85,15 +90,31 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     console.log("AccountID: " + AccountID);
     console.log("Ca: " + shift.ShiftID);
 
-    const shiftStart = dayjs(shift.StartTime).tz("Asia/Ho_Chi_Minh");
+    const shiftStart = dayjs.tz(
+      `${scanDate} ${shift.StartTime}`,
+      "Asia/Ho_Chi_Minh"
+    );
     const shiftEnd = shiftStart.add(shift.Duration, "minute");
-    console.log("Shift End (full):", shiftEnd.format("YYYY-MM-DD HH:mm:ss"));
-
     const intervalMs = dayjs.duration(shift.Interval).asMinutes();
     const checkInStart = shiftStart.subtract(intervalMs, "minute");
     const checkInEnd = shiftStart.add(intervalMs, "minute");
     const checkOutStart = shiftEnd.subtract(intervalMs, "millisecond");
     const checkOutDeadline = shiftEnd.add(intervalMs, "millisecond");
+
+    console.log("Shift start:", shiftStart.format("HH:mm:ss"));
+    console.log("Shift end:", shiftEnd.format("HH:mm:ss"));
+    console.log(
+      "Check-in window:",
+      checkInStart.format("HH:mm:ss"),
+      "→",
+      checkInEnd.format("HH:mm:ss")
+    );
+    console.log(
+      "Check-out window:",
+      checkOutStart.format("HH:mm:ss"),
+      "→",
+      checkOutDeadline.format("HH:mm:ss")
+    );
 
     let updated = false;
 
@@ -192,7 +213,7 @@ async function logUnrecognized(pool, UID, timestamp, IPAddress, reason) {
   await pool
     .request()
     .input("UID", sql.VarChar(20), UID)
-    .input("ScanTime", sql.DateTime, timestamp)
+    .input("ScanTime", sql.DateTime, scanTime.toDate())
     .input("IPAddress", sql.VarChar(45), IPAddress)
     .input("IsRecognized", sql.Bit, 0)
     .input("Note", sql.NVarChar(225), reason).query(`
