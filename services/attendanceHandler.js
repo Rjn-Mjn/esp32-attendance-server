@@ -31,7 +31,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
 
     if (uidRecords.length === 0) {
       console.log(`UID ${UID} không tồn tại trong hệ thống.`);
-      await logUnrecognized(pool, UID, timestamp, IPAddress, "UID not found");
+      await logUnrecognized(pool, UID, scanTime, IPAddress, "UID not found");
       return;
     }
 
@@ -48,7 +48,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       await logUnrecognized(
         pool,
         UID,
-        timestamp,
+        scanTime,
         IPAddress,
         "Account not found"
       );
@@ -58,6 +58,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
 
     const AccountID = accountRecords[0].AccountID;
 
+    console.log("Date scanned: " + scanTimeStr);
     console.log("Date scanned: " + scanDate);
     console.log("AccountID: " + AccountID);
 
@@ -74,7 +75,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       `);
 
     if (attendanceResult.recordset.length === 0) {
-      await logUnrecognized(pool, UID, timestamp, IPAddress, "No shift found");
+      await logUnrecognized(pool, UID, scanTime, IPAddress, "No shift found");
       return;
     }
 
@@ -100,11 +101,13 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     // 3. Cập nhật OTStart nếu nằm trong thời gian check-in
     console.log("Thời điểm OTStart: " + shift.OTStart);
     console.log("Thời gian quét" + scanTime);
+    console.log("Thời gian quét" + scanTimeStr);
     console.log(scanTime.isBetween(checkInStart, checkInEnd, null, "[]"));
+    console.log(scanTimeStr.isBetween(checkInStart, checkInEnd, null, "[]"));
 
     if (
       !shift.OTStart &&
-      scanTime.isBetween(checkInStart, checkInEnd, null, "[]")
+      scanTimeStr.isBetween(checkInStart, checkInEnd, null, "[]")
     ) {
       console.log("Chưa có OTStart và thời gian quét thỏa điều kiện");
 
@@ -120,7 +123,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     }
 
     // 4. Cập nhật OTEnd nếu nằm trong thời gian check-out
-    if (!shift.OTEnd && scanTime.isAfter(checkOutStart)) {
+    if (!shift.OTEnd && scanTimeStr.isAfter(checkOutStart)) {
       await pool
         .request()
         .input("AccountID", sql.VarChar(100), AccountID)
@@ -166,7 +169,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     await pool
       .request()
       .input("UID", sql.VarChar(20), UID)
-      .input("ScanTime", sql.DateTime, timestamp)
+      .input("ScanTime", sql.DateTime, scanTime)
       .input("IPAddress", sql.VarChar(45), IPAddress)
       .input("IsRecognized", sql.Bit, 1)
       .input("Note", sql.NVarChar(255), Note).query(`
