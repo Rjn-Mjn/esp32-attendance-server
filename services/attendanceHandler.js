@@ -104,21 +104,26 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       shift.Duration.getUTCMinutes() * 60 * 1000 +
       shift.Duration.getUTCSeconds() * 1000;
 
+    const intervalMs =
+      shift.Interval.getUTCHours() * 60 * 60 * 1000 +
+      shift.Interval.getUTCMinutes() * 60 * 1000 +
+      shift.Interval.getUTCSeconds() * 1000;
+
     const duration = dayjs.duration(durationMs);
+    const interval = dayjs.duration(intervalMs);
 
     const startTimeStr = dayjs(shift.StartTime).format("HH:mm:ss");
     const shiftStart = dayjs(`${scanDate}T${startTimeStr}`);
     const shiftEnd = shiftStart.add(duration, "minute");
-    const intervalMs = dayjs.duration(shift.Interval).asMinutes();
-    const checkInStart = shiftStart.subtract(intervalMs, "minute");
-    const checkInEnd = shiftStart.add(intervalMs, "minute");
-    const checkOutStart = shiftEnd.subtract(intervalMs, "millisecond");
-    const checkOutDeadline = shiftEnd.add(intervalMs, "millisecond");
+    const checkInStart = shiftStart.subtract(interval, "minute");
+    const checkInEnd = shiftStart.add(interval, "minute");
+    const checkOutStart = shiftEnd.subtract(interval, "millisecond");
+    const checkOutDeadline = shiftEnd.add(interval, "millisecond");
 
-    console.log("Shift start:", shiftStart.format("HH:mm:ss"));
-    console.log("Shift end:", shiftEnd.format("HH:mm:ss"));
-    console.log("Interval: ", intervalMs);
-    console.log(typeof intervalMs);
+    console.log("Shift start (UTC):", shiftStart.utc().format("HH:mm:ss"));
+    console.log("Shift end:", shiftEnd.utc().format("HH:mm:ss"));
+    console.log("Interval: ", interval);
+    console.log(typeof interval);
     console.log("Check-in window:", checkInStart, "→", checkInEnd);
     console.log("Check-out window:", checkOutStart, "→", checkOutDeadline);
 
