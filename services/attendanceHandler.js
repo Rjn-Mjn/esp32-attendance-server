@@ -169,7 +169,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     await pool
       .request()
       .input("UID", sql.VarChar(20), UID)
-      .input("ScanTime", sql.DateTime, scanTime)
+      .input("ScanTime", sql.DateTime, scanTime.toDate())
       .input("IPAddress", sql.VarChar(45), IPAddress)
       .input("IsRecognized", sql.Bit, 1)
       .input("Note", sql.NVarChar(255), Note).query(`
