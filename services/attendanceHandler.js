@@ -100,8 +100,8 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
 
     // 3. Cập nhật OTStart nếu nằm trong thời gian check-in
     console.log("Thời điểm OTStart: " + shift.OTStart);
-    console.log("Thời gian quét" + scanTime);
-    console.log("Thời gian quét" + scanTimeStr);
+    console.log("Thời gian quét: " + scanTime);
+    console.log("Thời gian quét: " + scanTimeStr);
     console.log(scanTime.isBetween(checkInStart, checkInEnd, null, "[]"));
     // console.log(scanTimeStr.isBetween(checkInStart, checkInEnd, null, "[]"));
 
