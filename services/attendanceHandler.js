@@ -124,7 +124,10 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     console.log("StartTime: ", shiftStart.format()); // 2025-07-21T04:30:00+07:00
     console.log("StartTime: ", shiftStart.toISOString()); // 2025-07-20T21:30:00.000Z
 
-    console.log("Shift end:", shiftStart);
+    console.log("Shift Start:", shiftStart);
+
+    console.log("Shift end: ", shiftEnd.format()); // 2025-07-21T04:30:00+07:00
+    console.log("Shift end: ", shiftEnd.toISOString()); // 2025-07-20T21:30:00.000Z
     console.log("Shift end:", shiftEnd);
     console.log("Interval: ", interval);
     console.log(typeof interval);
