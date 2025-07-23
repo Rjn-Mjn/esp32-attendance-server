@@ -96,6 +96,8 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     console.log("Date scanned: " + scanDate);
     console.log("AccountID: " + AccountID);
     console.log("Ca: " + shift.ShiftID);
+    console.log(shift.Duration);
+    console.log(typeof shift.Duration);
 
     function timeStrToMinutes(timeStr) {
       const [hours, minutes] = timeStr.toString().split(":").map(Number);
