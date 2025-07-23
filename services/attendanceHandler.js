@@ -26,7 +26,9 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
   const scanTimeStr = scanTime.format("HH:mm:ss");
 
   try {
-    const pool = await poolPromise;
+    {
+      const pool = await poolPromise;
+    }
 
     // 1. Kiểm tra UID có tồn tại không
     const { recordset: uidRecords } = await pool
@@ -36,7 +38,13 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
 
     if (uidRecords.length === 0) {
       console.log(`UID ${UID} không tồn tại trong hệ thống.`);
-      await logUnrecognized(pool, UID, scanTime, IPAddress, "UID not found");
+      await logUnrecognized(
+        pool,
+        UID,
+        scanTime.toDate(),
+        IPAddress,
+        "UID not found"
+      );
       return;
     }
 
@@ -53,7 +61,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       await logUnrecognized(
         pool,
         UID,
-        scanTime,
+        scanTime.toDate(),
         IPAddress,
         "Account not found"
       );
@@ -80,7 +88,13 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       `);
 
     if (attendanceResult.recordset.length === 0) {
-      await logUnrecognized(pool, UID, scanTime, IPAddress, "No shift found");
+      await logUnrecognized(
+        pool,
+        UID,
+        scanTime.toDate(),
+        IPAddress,
+        "No shift found"
+      );
       return;
     }
 
