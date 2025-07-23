@@ -99,16 +99,16 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     console.log(shift.Duration);
     console.log(typeof shift.Duration);
 
-    function timeStrToMinutes(timeStr) {
-      const [hours, minutes] = timeStr.toString().split(":").map(Number);
-      return hours * 60 + minutes;
-    }
+    const durationMs =
+      shift.Duration.getUTCHours() * 60 * 60 * 1000 +
+      shift.Duration.getUTCMinutes() * 60 * 1000 +
+      shift.Duration.getUTCSeconds() * 1000;
 
-    const durationInMinutes = timeStrToMinutes(shift.Duration);
+    const duration = dayjs.duration(durationMs);
 
     const startTimeStr = dayjs(shift.StartTime).format("HH:mm:ss");
     const shiftStart = dayjs(`${scanDate}T${startTimeStr}`);
-    const shiftEnd = shiftStart.add(durationInMinutes, "minute");
+    const shiftEnd = shiftStart.add(duration, "minute");
     const intervalMs = dayjs.duration(shift.Interval).asMinutes();
     const checkInStart = shiftStart.subtract(intervalMs, "minute");
     const checkInEnd = shiftStart.add(intervalMs, "minute");
