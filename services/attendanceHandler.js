@@ -106,11 +106,10 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     const duration = dayjs.duration(durationMs);
     const interval = dayjs.duration(intervalMs);
 
-    const shiftStart = dayjs.tz(
-      `${scanDate} ${shift.StartTime}`,
-      "YYYY-MM-DD HH:mm:ss",
-      "Asia/Ho_Chi_Minh"
-    );
+    const startTimeStr = shift.StartTime; // ví dụ: "07:00:00"
+
+    // Gộp lại thành 2025-07-21T07:00:00 mà không bị shift timezone
+    const shiftStart = dayjs(`${scanDate}T${startTimeStr}`);
 
     const shiftEnd = shiftStart.add(duration); // already in ms
     const checkInStart = shiftStart.subtract(interval);
