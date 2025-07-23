@@ -154,10 +154,10 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     }
 
     // 4. Cập nhật OTEnd nếu nằm trong thời gian check-out
-    console.log(dayjs(`${scanDate}T${scanTimeStr}`).utc());
+    console.log(dayjs(`${scanDate}T${scanTimeStr}`).local());
 
     console.log(
-      dayjs(`${scanDate}T${scanTimeStr}`).utc().isAfter(checkOutStart)
+      dayjs(`${scanDate}T${scanTimeStr}`).local().isAfter(checkOutStart)
     );
 
     if (!shift.OTEnd && scanTime.isAfter(checkOutStart)) {
