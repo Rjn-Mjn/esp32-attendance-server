@@ -115,8 +115,10 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     const checkOutStart = shiftEnd.subtract(intervalMs, "millisecond");
     const checkOutDeadline = shiftEnd.add(intervalMs, "millisecond");
 
-    console.log("Shift start:", shiftStart);
-    console.log("Shift end:", shiftEnd);
+    console.log("Shift start:", shiftStart.format("HH:mm:ss"));
+    console.log("Shift end:", shiftEnd.format("HH:mm:ss"));
+    console.log("Interval: ", intervalMs);
+    console.log(typeof intervalMs);
     console.log("Check-in window:", checkInStart, "→", checkInEnd);
     console.log("Check-out window:", checkOutStart, "→", checkOutDeadline);
 
