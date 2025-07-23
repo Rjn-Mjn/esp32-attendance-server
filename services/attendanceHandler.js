@@ -227,7 +227,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     if (OTStart && OTEnd) {
       const startObj = dayjs(OTStart).tz("Asia/Ho_Chi_Minh");
       console.log("[DEBUG] startObj:", startObj.format("YYYY-MM-DD HH:mm:ss"));
-      const status = startObj.isSameOrBefore(checkInEnd) ? "present" : "late";
+      const status = OTStart.isSameOrBefore(checkInEnd) ? "present" : "late";
       console.log("[DEBUG] determined status:", status);
       await pool
         .request()
