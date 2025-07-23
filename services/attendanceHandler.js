@@ -80,7 +80,6 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
         WHERE A.AccountID = @AccountID AND A.date = @date
       `);
 
-    scanTime = dayjs.tz(timestamp, "Asia/Ho_Chi_Minh");
     if (attendanceResult.recordset.length === 0) {
       await logUnrecognized(
         pool,
