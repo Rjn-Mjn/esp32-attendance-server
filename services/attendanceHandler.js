@@ -26,9 +26,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
   const scanTimeStr = scanTime.format("HH:mm:ss");
 
   try {
-    {
-      const pool = await poolPromise;
-    }
+    const pool = await poolPromise;
 
     // 1. Kiểm tra UID có tồn tại không
     const { recordset: uidRecords } = await pool
