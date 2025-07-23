@@ -106,10 +106,8 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     const duration = dayjs.duration(durationMs);
     const interval = dayjs.duration(intervalMs);
 
-    const startTimeStr = shift.StartTime; // ví dụ: "07:00:00"
-
-    // Gộp lại thành 2025-07-21T07:00:00 mà không bị shift timezone
-    const shiftStart = dayjs(`${scanDate}T${startTimeStr}`);
+    const startTimeStr = dayjs.utc(shift.StartTime).format("HH:mm:ss"); // Lấy giờ đúng theo DB
+    const shiftStart = dayjs(`${scanDate}T${startTimeStr}`); // Kết hợp ngày + giờ
 
     const shiftEnd = shiftStart.add(duration); // already in ms
     const checkInStart = shiftStart.subtract(interval);
@@ -123,8 +121,8 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       dayjs(shift.StartTime).tz("Asia/Ho_Chi_Minh").format("HH:mm:ss")
     );
     console.log("UTC Time:", dayjs(shift.StartTime).utc().format("HH:mm:ss"));
-    console.log(shiftStart.format()); // 2025-07-21T04:30:00+07:00
-    console.log(shiftStart.toISOString()); // 2025-07-20T21:30:00.000Z
+    console.log("StartTime: ", shiftStart.format()); // 2025-07-21T04:30:00+07:00
+    console.log("StartTime: ", shiftStart.toISOString()); // 2025-07-20T21:30:00.000Z
 
     console.log("Shift end:", shiftEnd);
     console.log("Interval: ", interval);
