@@ -17,11 +17,22 @@ const MS_IN_MINUTE = 60000;
 
 async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
   try {
-    if (!dayjs(timestamp).isValid()) {
+    const isValidTime = dayjs(timestamp).isValid();
+    const scanTime = isValidTime
+      ? dayjs.tz(timestamp, "Asia/Ho_Chi_Minh")
+      : null;
+
+    if (!isValidTime) {
       console.error("❌ Invalid timestamp format:", timestamp);
+      await logUnrecognized(
+        pool,
+        UID,
+        new Date(),
+        IPAddress,
+        "Invalid timestamp"
+      );
       return;
     }
-    const scanTime = dayjs.tz(timestamp, "Asia/Ho_Chi_Minh");
 
     const scanDate = scanTime.format("YYYY-MM-DD");
     const scanTimeStr = scanTime.format("HH:mm:ss");
