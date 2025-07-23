@@ -84,7 +84,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     console.log("Ca: " + shift.ShiftID);
 
     const shiftStart = dayjs(shift.StartTime).tz("Asia/Ho_Chi_Minh");
-    const shiftEnd = shiftStart.add(durationInMinutes, "minute");
+    const shiftEnd = shiftStart.add(shift.duration, "minute");
     console.log(shiftEnd);
 
     const intervalMs = dayjs.duration(shift.Interval).asMinutes();
