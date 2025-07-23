@@ -14,6 +14,7 @@ const server = net.createServer((socket) => {
 
       try {
         const raw = JSON.parse(message); // raw: { uid, timestamp }
+        console.log("message received: " + message);
 
         // Bổ sung thêm IPAddress và UID
         const payload = {
