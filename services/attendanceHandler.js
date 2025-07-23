@@ -16,16 +16,16 @@ dayjs.extend(timezone);
 const MS_IN_MINUTE = 60000;
 
 async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
-  if (!dayjs(timestamp).isValid()) {
-    console.error("❌ Invalid timestamp format:", timestamp);
-    return;
-  }
-  const scanTime = dayjs.tz(timestamp, "Asia/Ho_Chi_Minh");
-
-  const scanDate = scanTime.format("YYYY-MM-DD");
-  const scanTimeStr = scanTime.format("HH:mm:ss");
-
   try {
+    if (!dayjs(timestamp).isValid()) {
+      console.error("❌ Invalid timestamp format:", timestamp);
+      return;
+    }
+    const scanTime = dayjs.tz(timestamp, "Asia/Ho_Chi_Minh");
+
+    const scanDate = scanTime.format("YYYY-MM-DD");
+    const scanTimeStr = scanTime.format("HH:mm:ss");
+
     const pool = await poolPromise;
 
     // 1. Kiểm tra UID có tồn tại không
