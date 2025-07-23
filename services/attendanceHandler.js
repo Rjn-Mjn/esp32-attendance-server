@@ -44,10 +44,6 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     // 1. Parse and debug scan time
     const scanTime = dayjs(timestamp).tz("Asia/Ho_Chi_Minh");
     console.log("[DEBUG] scanTime:", scanTime.format("YYYY-MM-DD HH:mm:ss"));
-    console.log(
-      "[DEBUG] scanTime:",
-      scanTime.format("YYYY-MM-DD HH:mm:ss").toDate()
-    );
     console.log("[DEBUG] scanTime:", scanTime.toDate());
 
     if (!scanTime.isValid()) {
