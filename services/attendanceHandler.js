@@ -2,13 +2,11 @@
 const dayjs = require("dayjs");
 const isBetween = require("dayjs/plugin/isBetween");
 const isSameOrBefore = require("dayjs/plugin/isSameOrBefore");
-dayjs.extend(isBetween);
-dayjs.extend(isSameOrBefore);
-
 const { poolPromise, sql } = require("../db/sql");
 const utc = require("dayjs/plugin/utc");
 const timezone = require("dayjs/plugin/timezone");
-
+dayjs.extend(isBetween);
+dayjs.extend(isSameOrBefore);
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
@@ -85,14 +83,16 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     console.log("AccountID: " + AccountID);
     console.log("Ca: " + shift.ShiftID);
 
-    const shiftStart = dayjs(`${scanDate}T${shift.StartTime}`);
-    const shiftEnd = shiftStart.add(shift.Duration, "minute");
+    const shiftStart = dayjs.tz(
+      `${scanDate} ${shift.StartTime}`,
+      "Asia/Ho_Chi_Minh"
+    );
+    const shiftEnd = shiftStart.add(durationInMinutes, "minute");
     console.log(shiftEnd);
 
-    const intervalMs = shift.Interval * MS_IN_MINUTE;
-
-    const checkInStart = shiftStart.subtract(intervalMs, "millisecond");
-    const checkInEnd = shiftStart.add(intervalMs, "millisecond");
+    const intervalMs = dayjs.duration(shift.Interval).asMinutes();
+    const checkInStart = shiftStart.subtract(intervalMs, "minute");
+    const checkInEnd = shiftStart.add(intervalMs, "minute");
     const checkOutStart = shiftEnd.subtract(intervalMs, "millisecond");
     const checkOutDeadline = shiftEnd.add(intervalMs, "millisecond");
 
@@ -103,11 +103,11 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     console.log("Thời gian quét" + scanTime);
     console.log("Thời gian quét" + scanTimeStr);
     console.log(scanTime.isBetween(checkInStart, checkInEnd, null, "[]"));
-    console.log(scanTimeStr.isBetween(checkInStart, checkInEnd, null, "[]"));
+    // console.log(scanTimeStr.isBetween(checkInStart, checkInEnd, null, "[]"));
 
     if (
       !shift.OTStart &&
-      scanTimeStr.isBetween(checkInStart, checkInEnd, null, "[]")
+      scanTime.isBetween(checkInStart, checkInEnd, null, "[]")
     ) {
       console.log("Chưa có OTStart và thời gian quét thỏa điều kiện");
 
