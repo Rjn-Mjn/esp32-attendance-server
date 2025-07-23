@@ -4,13 +4,19 @@ const isBetween = require("dayjs/plugin/isBetween");
 const isSameOrBefore = require("dayjs/plugin/isSameOrBefore");
 dayjs.extend(isBetween);
 dayjs.extend(isSameOrBefore);
+
 const { poolPromise, sql } = require("../db/sql");
+const utc = require("dayjs/plugin/utc");
+const timezone = require("dayjs/plugin/timezone");
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // 1 phút là 60 * 1000 ms
 const MS_IN_MINUTE = 60000;
 
 async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
-  const scanTime = dayjs(timestamp);
+  const scanTime = dayjs.tz(timestamp, "Asia/Ho_Chi_Minh");
   const scanDate = scanTime.format("YYYY-MM-DD");
   const scanTimeStr = scanTime.format("HH:mm:ss");
 
