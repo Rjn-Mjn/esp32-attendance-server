@@ -17,40 +17,49 @@ dayjs.extend(timezone);
 
 const { poolPromise, sql } = require("../db/sql");
 
-// Handle an unrecognized scan by logging to AttendanceLog
+// Log unrecognized scan
 async function logUnrecognized(pool, UID, scanTimeDate, IPAddress, reason) {
+  console.log("[DEBUG] logUnrecognized called with:", {
+    UID,
+    scanTimeDate,
+    IPAddress,
+    reason,
+  });
   await pool
     .request()
     .input("UID", sql.VarChar(20), UID)
     .input("ScanTime", sql.DateTime, scanTimeDate)
     .input("IPAddress", sql.VarChar(45), IPAddress)
     .input("IsRecognized", sql.Bit, 0)
-    .input("Note", sql.NVarChar(255), reason)
-    .query(
-      `INSERT INTO AttendanceLog (UID, ScanTime, IPAddress, IsRecognized, Note)
-       VALUES (@UID, @ScanTime, @IPAddress, @IsRecognized, @Note)`
-    );
+    .input("Note", sql.NVarChar(255), reason).query(`
+      INSERT INTO AttendanceLog (UID, ScanTime, IPAddress, IsRecognized, Note)
+      VALUES (@UID, @ScanTime, @IPAddress, @IsRecognized, @Note)
+    `);
   console.log(`⚠️ Unrecognized UID ${UID}: ${reason}`);
 }
 
-// Main handler
+// Main attendance handler
 async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
   try {
-    // Parse scan time as Vietnam local
+    // 1. Parse and debug scan time
     const scanTime = dayjs(timestamp).tz("Asia/Ho_Chi_Minh");
+    console.log("[DEBUG] scanTime:", scanTime.format("YYYY-MM-DD HH:mm:ss"));
     if (!scanTime.isValid()) {
       console.error("❌ Invalid timestamp:", timestamp);
       return;
     }
     const scanDate = scanTime.format("YYYY-MM-DD");
+    console.log("[DEBUG] scanDate:", scanDate);
 
     const pool = await poolPromise;
 
-    // 1. Check UID exists
+    // 2. Check UID exists
+    console.log("[DEBUG] Checking UID:", UID);
     const { recordset: uidRecords } = await pool
       .request()
       .input("uid", sql.NVarChar(20), UID)
       .query("SELECT CardID FROM AttendanceCard WHERE UID = @uid");
+    console.log("[DEBUG] uidRecords:", uidRecords);
     if (uidRecords.length === 0) {
       await logUnrecognized(
         pool,
@@ -62,12 +71,14 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       return;
     }
     const cardID = uidRecords[0].CardID;
+    console.log("[DEBUG] cardID:", cardID);
 
-    // 2. Find account
+    // 3. Find account
     const { recordset: accountRecords } = await pool
       .request()
       .input("cardID", sql.VarChar(10), cardID)
       .query("SELECT AccountID FROM Account WHERE CardID = @cardID");
+    console.log("[DEBUG] accountRecords:", accountRecords);
     if (accountRecords.length === 0) {
       await logUnrecognized(
         pool,
@@ -79,8 +90,9 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       return;
     }
     const AccountID = accountRecords[0].AccountID;
+    console.log("[DEBUG] AccountID:", AccountID);
 
-    // 3. Fetch today's attendance record
+    // 4. Fetch today's shift record
     const { recordset } = await pool
       .request()
       .input("AccountID", sql.VarChar(100), AccountID)
@@ -91,6 +103,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
         JOIN ShiftType ST ON S.STID = ST.ST_ID
         WHERE A.AccountID = @AccountID AND A.date = @date AND A.isDeleted = 0
       `);
+    console.log("[DEBUG] attendance recordset:", recordset);
     if (recordset.length === 0) {
       await logUnrecognized(
         pool,
@@ -102,30 +115,53 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       return;
     }
     const shift = recordset[0];
+    console.log("[DEBUG] shift data:", shift);
 
-    // 4. Compute durations in minutes
+    // 5. Compute durations
     const durationMinutes =
       shift.Duration.getUTCHours() * 60 + shift.Duration.getUTCMinutes();
     const intervalMinutes =
       shift.Interval.getUTCHours() * 60 + shift.Interval.getUTCMinutes();
+    console.log(
+      "[DEBUG] durationMinutes, intervalMinutes:",
+      durationMinutes,
+      intervalMinutes
+    );
 
-    // 5. Build shift start from date + raw time
+    // 6. Build shiftStart and shiftEnd
     const startTimeRaw = dayjs.utc(shift.StartTime).format("HH:mm:ss");
+    console.log("[DEBUG] startTimeRaw:", startTimeRaw);
     const shiftStart = dayjs(
       `${scanDate} ${startTimeRaw}`,
       "YYYY-MM-DD HH:mm:ss"
     ).tz("Asia/Ho_Chi_Minh");
+    console.log(
+      "[DEBUG] shiftStart:",
+      shiftStart.format("YYYY-MM-DD HH:mm:ss")
+    );
     const shiftEnd = shiftStart.add(durationMinutes, "minute");
+    console.log("[DEBUG] shiftEnd:", shiftEnd.format("YYYY-MM-DD HH:mm:ss"));
 
-    // 6. Define check windows
+    // 7. Define check windows
     const checkInStart = shiftStart.subtract(intervalMinutes, "minute");
     const checkInEnd = shiftStart.add(intervalMinutes, "minute");
     const checkOutStart = shiftEnd.subtract(intervalMinutes, "minute");
     const checkOutDeadline = shiftEnd.add(intervalMinutes, "minute");
+    console.log(
+      "[DEBUG] checkInStart, checkInEnd, checkOutStart, checkOutDeadline:",
+      checkInStart.format("HH:mm:ss"),
+      checkInEnd.format("HH:mm:ss"),
+      checkOutStart.format("HH:mm:ss"),
+      checkOutDeadline.format("HH:mm:ss")
+    );
 
     let updated = false;
 
-    // 7. Check-in
+    // 8. Check-in
+    console.log(
+      "[DEBUG] scanTime.isBetween(checkInStart, checkInEnd):",
+      scanTime.isBetween(checkInStart, checkInEnd, null, "[]")
+    );
     if (
       !shift.OTStart &&
       scanTime.isBetween(checkInStart, checkInEnd, null, "[]")
@@ -141,7 +177,15 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       updated = true;
     }
 
-    // 8. Check-out
+    // 9. Check-out
+    console.log(
+      "[DEBUG] scanTime.isAfter(checkOutStart):",
+      scanTime.isAfter(checkOutStart)
+    );
+    console.log(
+      "[DEBUG] scanTime.isBefore(checkOutDeadline):",
+      scanTime.isBefore(checkOutDeadline)
+    );
     if (
       !shift.OTEnd &&
       scanTime.isAfter(checkOutStart) &&
@@ -158,7 +202,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       updated = true;
     }
 
-    // 9. Determine status if both OTStart and OTEnd set
+    // 10. Determine status
     const statusSet = await pool
       .request()
       .input("AccountID", sql.VarChar(100), AccountID)
@@ -167,9 +211,12 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
         `SELECT OTStart, OTEnd FROM Attendance WHERE AccountID = @AccountID AND ShiftID = @ShiftID`
       );
     const { OTStart, OTEnd } = statusSet.recordset[0];
+    console.log("[DEBUG] OTStart, OTEnd:", OTStart, OTEnd);
     if (OTStart && OTEnd) {
       const startObj = dayjs(OTStart).tz("Asia/Ho_Chi_Minh");
+      console.log("[DEBUG] startObj:", startObj.format("YYYY-MM-DD HH:mm:ss"));
       const status = startObj.isSameOrBefore(checkInEnd) ? "present" : "late";
+      console.log("[DEBUG] determined status:", status);
       await pool
         .request()
         .input("AccountID", sql.VarChar(100), AccountID)
@@ -180,7 +227,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
         );
     }
 
-    // 10. Log to AttendanceLog
+    // 11. Log to AttendanceLog
     await pool
       .request()
       .input("UID", sql.VarChar(20), UID)
