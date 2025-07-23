@@ -6,13 +6,11 @@ const isSameOrBefore = require("dayjs/plugin/isSameOrBefore");
 const { poolPromise, sql } = require("../db/sql");
 const utc = require("dayjs/plugin/utc");
 const timezone = require("dayjs/plugin/timezone");
-const isAfter = require("dayjs/plugin/isAfter");
 dayjs.extend(isBetween);
 dayjs.extend(isSameOrBefore);
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(duration);
-dayjs.extend(isAfter);
 
 // 1 phút là 60 * 1000 ms
 const MS_IN_MINUTE = 60000;
@@ -125,7 +123,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     }
 
     // 4. Cập nhật OTEnd nếu nằm trong thời gian check-out
-    if (!shift.OTEnd && scanTimeStr.isAfter(checkOutStart)) {
+    if (!shift.OTEnd && scanTime.isAfter(checkOutStart)) {
       await pool
         .request()
         .input("AccountID", sql.VarChar(100), AccountID)
