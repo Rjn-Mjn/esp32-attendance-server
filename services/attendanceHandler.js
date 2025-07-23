@@ -52,6 +52,9 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
 
     const AccountID = accountRecords[0].AccountID;
 
+    console.log("Date scanned: " + scanDate);
+    console.log("AccountID: " + AccountID);
+
     // 2. Lấy ca hôm nay
     const attendanceResult = await pool
       .request()
