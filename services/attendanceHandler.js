@@ -226,13 +226,9 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     console.log("[DEBUG] OTStart, OTEnd:", OTStart, OTEnd);
     if (OTStart && OTEnd) {
       // Parse OTStart preserving local value
-      const startObj = dayjs(OTStart)
-        .utcOffset(0)
-        .add(dayjs(OTStart).utcOffset(), "minute");
-      console.log(
-        "[DEBUG] OTStart (local preserved):",
-        startObj.format("YYYY-MM-DD HH:mm:ss")
-      );
+      const rawStart = dayjs(OTStart).utc().format("YYYY-MM-DD HH:mm:ss");
+      const startObj = dayjs(rawStart, "YYYY-MM-DD HH:mm:ss");
+
       const status = startObj.isSameOrBefore(checkInEnd) ? "present" : "late";
       console.log("[DEBUG] OTStart:", startObj.format("YYYY-MM-DD HH:mm:ss"));
       console.log("[DEBUG] determined status:", status);
