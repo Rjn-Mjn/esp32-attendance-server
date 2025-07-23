@@ -103,7 +103,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     console.log("Ca: " + shift.ShiftID);
 
     const startTimeStr = dayjs(shift.StartTime).format("HH:mm:ss");
-    const shiftStart = dayjs(`${date}T${startTimeStr}`);
+    const shiftStart = dayjs(`${scanDate}T${startTimeStr}`);
     const shiftEnd = shiftStart.add(shift.Duration, "minute");
     const intervalMs = dayjs.duration(shift.Interval).asMinutes();
     const checkInStart = shiftStart.subtract(intervalMs, "minute");
