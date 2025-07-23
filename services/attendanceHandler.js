@@ -98,7 +98,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     console.log("Ca: " + shift.ShiftID);
 
     function timeStrToMinutes(timeStr) {
-      const [hours, minutes] = timeStr.split(":").map(Number);
+      const [hours, minutes] = timeStr.toString().split(":").map(Number);
       return hours * 60 + minutes;
     }
 
