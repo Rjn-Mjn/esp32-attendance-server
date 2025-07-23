@@ -197,13 +197,23 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       scanTime.isAfter(checkOutStart) &&
       scanTime.isBefore(checkOutDeadline)
     ) {
+      // Build a JS Date with local components to preserve local time
+      const localEnd = new Date(
+        scanTime.year(),
+        scanTime.month(),
+        scanTime.date(),
+        scanTime.hour(),
+        scanTime.minute(),
+        scanTime.second()
+      );
+      console.log("[DEBUG] localEnd for DB:", localEnd);
       await pool
         .request()
         .input("AccountID", sql.VarChar(100), AccountID)
         .input("ShiftID", sql.VarChar(100), shift.ShiftID)
-        .input("OTEnd", sql.DateTime, scanTime.toDate())
+        .input("OTEnd", sql.DateTime, localEnd)
         .query(
-          `UPDATE Attendance SET OTEnd = @OTEnd WHERE AccountID = @AccountID AND ShiftID = @ShiftID`
+          `UPDATE Attendance SET OTEnd = @OTEnd WHERE AccountID = @AccountID AND ShiftID = @SHIFTID`
         );
       updated = true;
     }
