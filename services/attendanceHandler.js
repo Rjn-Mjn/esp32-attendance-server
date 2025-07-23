@@ -1,5 +1,6 @@
 // services/attendanceHandler.js
 const dayjs = require("dayjs");
+const duration = require("dayjs/plugin/duration");
 const isBetween = require("dayjs/plugin/isBetween");
 const isSameOrBefore = require("dayjs/plugin/isSameOrBefore");
 const { poolPromise, sql } = require("../db/sql");
@@ -9,6 +10,7 @@ dayjs.extend(isBetween);
 dayjs.extend(isSameOrBefore);
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(duration);
 
 // 1 phút là 60 * 1000 ms
 const MS_IN_MINUTE = 60000;
