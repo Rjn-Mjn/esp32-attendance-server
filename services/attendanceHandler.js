@@ -225,8 +225,14 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     const { OTStart, OTEnd } = statusSet.recordset[0];
     console.log("[DEBUG] OTStart, OTEnd:", OTStart, OTEnd);
     if (OTStart && OTEnd) {
-      // Parse OTStart as-is without timezone conversion
-      const startObj = dayjs(OTStart);
+      // Parse OTStart preserving local value
+      const startObj = dayjs(OTStart)
+        .utcOffset(0)
+        .add(dayjs(OTStart).utcOffset(), "minute");
+      console.log(
+        "[DEBUG] OTStart (local preserved):",
+        startObj.format("YYYY-MM-DD HH:mm:ss")
+      );
       const status = startObj.isSameOrBefore(checkInEnd) ? "present" : "late";
       console.log("[DEBUG] OTStart:", startObj.format("YYYY-MM-DD HH:mm:ss"));
       console.log("[DEBUG] determined status:", status);
