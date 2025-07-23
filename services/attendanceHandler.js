@@ -225,14 +225,10 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     const { OTStart, OTEnd } = statusSet.recordset[0];
     console.log("[DEBUG] OTStart, OTEnd:", OTStart, OTEnd);
     if (OTStart && OTEnd) {
-      const OTStartStr = dayjs
-        .utc(shift.StartTime)
-        .format("YYYY-MM-DD HH:mm:ss");
-      const startObj = dayjs(`${OTStartStr}`, "YYYY-MM-DD HH:mm:ss").tz(
-        "Asia/Ho_Chi_Minh"
-      );
-      console.log("[DEBUG] startObj:", startObj);
+      // Parse OTStart as-is without timezone conversion
+      const startObj = dayjs(OTStart);
       const status = startObj.isSameOrBefore(checkInEnd) ? "present" : "late";
+      console.log("[DEBUG] OTStart:", startObj.format("YYYY-MM-DD HH:mm:ss"));
       console.log("[DEBUG] determined status:", status);
       await pool
         .request()
