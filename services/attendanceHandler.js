@@ -106,19 +106,27 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     const duration = dayjs.duration(durationMs);
     const interval = dayjs.duration(intervalMs);
 
-    const startTimeStr = dayjs(shift.StartTime)
-      .tz("Asia/Ho_Chi_Minh")
-      .format("HH:mm:ss");
-    const shiftStart = dayjs(`${scanDate}T${startTimeStr}`).tz(
+    const shiftStart = dayjs.tz(
+      `${scanDate} ${shift.StartTime}`,
+      "YYYY-MM-DD HH:mm:ss",
       "Asia/Ho_Chi_Minh"
     );
+
     const shiftEnd = shiftStart.add(duration); // already in ms
     const checkInStart = shiftStart.subtract(interval);
     const checkInEnd = shiftStart.add(interval);
     const checkOutStart = shiftEnd.subtract(interval);
     const checkOutDeadline = shiftEnd.add(interval);
 
-    console.log("Shift start (UTC):", shiftStart);
+    console.log("Raw StartTime from DB:", shift.StartTime);
+    console.log(
+      "VN Time:",
+      dayjs(shift.StartTime).tz("Asia/Ho_Chi_Minh").format("HH:mm:ss")
+    );
+    console.log("UTC Time:", dayjs(shift.StartTime).utc().format("HH:mm:ss"));
+    console.log(shiftStart.format()); // 2025-07-21T04:30:00+07:00
+    console.log(shiftStart.toISOString()); // 2025-07-20T21:30:00.000Z
+
     console.log("Shift end:", shiftEnd);
     console.log("Interval: ", interval);
     console.log(typeof interval);
