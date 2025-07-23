@@ -218,7 +218,7 @@ async function logUnrecognized(pool, UID, timestamp, IPAddress, reason) {
   await pool
     .request()
     .input("UID", sql.VarChar(20), UID)
-    .input("ScanTime", sql.DateTime, scanTime.toDate())
+    .input("ScanTime", sql.DateTime, timestamp)
     .input("IPAddress", sql.VarChar(45), IPAddress)
     .input("IsRecognized", sql.Bit, 0)
     .input("Note", sql.NVarChar(225), reason).query(`
