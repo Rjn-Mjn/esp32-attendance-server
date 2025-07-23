@@ -59,6 +59,10 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
 
     const AccountID = accountRecords[0].AccountID;
 
+    console.log("Date scanned: " + scanTimeStr);
+    console.log("Date scanned: " + scanDate);
+    console.log("AccountID: " + AccountID);
+
     const attendanceResult = await pool
       .request()
       .input("AccountID", sql.VarChar(100), AccountID)
@@ -82,6 +86,12 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     }
 
     const shift = attendanceResult.recordset[0];
+    console.log(shift);
+    console.log("Date scanned: " + scanDate);
+    console.log("AccountID: " + AccountID);
+    console.log("Ca: " + shift.ShiftID);
+    console.log(shift.Duration);
+    console.log(typeof shift.Duration);
 
     const durationMs =
       shift.Duration.getUTCHours() * 60 * 60 * 1000 +
@@ -108,8 +118,18 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     const checkOutStart = shiftEnd.subtract(interval);
     const checkOutDeadline = shiftEnd.add(interval);
 
-    let updated = false;
+    console.log("Shift start (UTC):", shiftStart);
+    console.log("Shift end:", shiftEnd);
+    console.log("Interval: ", interval);
+    console.log(typeof interval);
+    console.log("Check-in window:", checkInStart, "→", checkInEnd);
+    console.log("Check-out window:", checkOutStart, "→", checkOutDeadline);
 
+    let updated = false;
+    console.log("Thời điểm OTStart: " + shift.OTStart);
+    console.log("Thời gian quét: " + scanTime);
+    console.log("Thời gian quét: " + scanTimeStr);
+    console.log(scanTime.isBetween(checkInStart, checkInEnd, null, "[]"));
     if (
       !shift.OTStart &&
       scanTime.isBetween(checkInStart, checkInEnd, null, "[]")
@@ -125,6 +145,8 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       updated = true;
     }
 
+    console.log(scanTime);
+    console.log(scanTime.isAfter(checkOutStart));
     if (!shift.OTEnd && scanTime.isAfter(checkOutStart)) {
       await pool
         .request()
