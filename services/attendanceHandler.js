@@ -164,9 +164,26 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       "[DEBUG] scanTime.isBetween(checkInStart, checkInEnd):",
       scanTime.isBetween(checkInStart, checkInEnd, null, "[]")
     );
+    console.log(
+      "[DEBUG] scanTime.isBetween(checkInEnd, checkoutStart):",
+      scanTime.isBetween(checkInEnd, checkoutStart, null, "[]")
+    );
     if (
       !shift.OTStart &&
       scanTime.isBetween(checkInStart, checkInEnd, null, "[]")
+    ) {
+      await pool
+        .request()
+        .input("AccountID", sql.VarChar(100), AccountID)
+        .input("ShiftID", sql.VarChar(100), shift.ShiftID)
+        .input("OTStart", sql.DateTime, scanTime.toDate())
+        .query(
+          `UPDATE Attendance SET OTStart = @OTStart WHERE AccountID = @AccountID AND ShiftID = @ShiftID`
+        );
+      updated = true;
+    } else if (
+      !shift.OTStart &&
+      scanTime.isBetween(checkInEnd, checkOutStart, null, "[]")
     ) {
       await pool
         .request()
