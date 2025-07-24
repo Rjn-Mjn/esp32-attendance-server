@@ -16,7 +16,7 @@ let latestUID = null;
 app.use(cors());
 app.use(express.json());
 
-app.post("/upload", (req, res) => {
+app.post("/send-uid", (req, res) => {
   const { uid } = req.body;
   if (uid) {
     latestUID = uid;
