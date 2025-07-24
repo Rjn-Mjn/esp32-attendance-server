@@ -5,10 +5,9 @@ const cors = require("cors");
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIO(server, {
-  cors: {
-    origin: "*",
-  },
+const io = require("socket.io")(server, {
+  cors: { origin: "*" },
+  transports: ["websocket"], // 👈 Bắt buộc dùng websocket để Java dễ xài
 });
 
 let latestUID = null;
