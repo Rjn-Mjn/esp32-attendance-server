@@ -106,7 +106,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
         WHERE A.AccountID = @AccountID AND A.date = @date AND A.isDeleted = 0
       `);
     console.log("[DEBUG] attendance recordset:", shiftRecords);
-    if (recordset.length === 0) {
+    if (shiftRecords.length === 0) {
       await logUnrecognized(
         pool,
         UID,
