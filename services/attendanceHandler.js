@@ -232,15 +232,14 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
         scanTime.second()
       );
       console.log("[DEBUG] localEnd for DB:", localEnd);
+      const timeScanned = scanTime.format("YYYY-MM-DD HH:mm:ss");
+      console.log("[DEBUG] time scanned:", timeScanned);
+
       await pool
         .request()
         .input("AccountID", sql.VarChar(100), AccountID)
         .input("ShiftID", sql.VarChar(100), shift.ShiftID)
-        .input(
-          "OTEnd",
-          sql.VarChar(19),
-          dayjs(localEnd).format("YYYY-MM-DD HH:mm:ss")
-        )
+        .input("OTEnd", sql.DateTime, timeScanned)
         .query(
           `UPDATE Attendance SET OTEnd = @OTEnd WHERE AccountID = @AccountID AND ShiftID = @SHIFTID`
         );
