@@ -1,40 +1,44 @@
 const express = require("express");
-const http = require("http");
-const socketIO = require("socket.io");
 const cors = require("cors");
+const http = require("http");
+const WebSocket = require("ws");
 
 const app = express();
-const server = http.createServer(app);
-const io = require("socket.io")(server, {
-  cors: { origin: "*" },
-  transports: ["websocket"], // 👈 Bắt buộc dùng websocket để Java dễ xài
-});
-
-let latestUID = null;
-
 app.use(cors());
 app.use(express.json());
 
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
+let clients = new Set();
+let latestUID = null;
+
+// HTTP endpoint để ESP32 POST UID
 app.post("/send-uid", (req, res) => {
   const { uid } = req.body;
-  if (uid) {
-    latestUID = uid;
-    console.log("Received UID:", uid);
-    io.emit("new_uid", uid); // gửi UID mới đến client
-    res.sendStatus(200);
-  } else {
-    res.status(400).send("No UID provided");
-  }
+  if (!uid) return res.status(400).send("Missing uid");
+  latestUID = uid;
+  // Broadcast tới tất cả client WS
+  clients.forEach((ws) => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(uid);
+    }
+  });
+  console.log("[ESP32] UID sent:", uid);
+  res.sendStatus(200);
 });
 
-io.on("connection", (socket) => {
-  console.log("Java Swing connected:", socket.id);
-  if (latestUID) {
-    socket.emit("new_uid", latestUID); // Gửi UID hiện tại nếu có
-  }
+// WS: khi có client connect
+wss.on("connection", (ws) => {
+  console.log("🔌 Swing connected");
+  clients.add(ws);
+  // gửi ngay UID hiện tại nếu đã có
+  if (latestUID) ws.send(latestUID);
+
+  ws.on("close", () => clients.delete(ws));
 });
 
-const PORT = 3002;
+const PORT = process.env.PORT || 3002;
 server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server listening on port ${PORT}`);
 });
