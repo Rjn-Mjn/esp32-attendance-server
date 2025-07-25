@@ -166,7 +166,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     );
     console.log(
       "[DEBUG] scanTime.isBetween(checkInEnd, checkoutStart):",
-      scanTime.isBetween(checkInEnd, checkoutStart, null, "[]")
+      scanTime.isBetween(checkInEnd, checkOutStart, null, "[]")
     );
     if (
       !shift.OTStart &&
