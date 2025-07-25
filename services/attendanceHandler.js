@@ -252,14 +252,15 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
         `SELECT OTStart, OTEnd FROM Attendance WHERE AccountID = @AccountID AND ShiftID = @ShiftID`
       );
     const { OTStart, OTEnd } = statusSet.recordset[0];
-    console.log("[DEBUG] OTStart, OTEnd:", OTStart, OTEnd);
     if (OTStart && OTEnd) {
-      // Parse OTStart preserving local value
-      const rawStart = dayjs(OTStart).utc().format("YYYY-MM-DD HH:mm:ss");
+      // Treat OTStart string as local without timezone shift
+      const rawStart = OTStart.toISOString().substring(0, 19).replace("T", " "); // "YYYY-MM-DD HH:mm:ss"
       const startObj = dayjs(rawStart, "YYYY-MM-DD HH:mm:ss");
-
+      console.log(
+        "[DEBUG] OTStart (DB local interpreted):",
+        startObj.format("YYYY-MM-DD HH:mm:ss")
+      );
       const status = startObj.isSameOrBefore(checkInEnd) ? "present" : "late";
-      console.log("[DEBUG] OTStart:", startObj.format("YYYY-MM-DD HH:mm:ss"));
       console.log("[DEBUG] determined status:", status);
       await pool
         .request()
