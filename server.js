@@ -1,5 +1,6 @@
 const net = require("net");
 const handleAttendance = require("./services/attendanceHandler");
+require("./utils/cronJob"); // Gọi để khởi động cron schedule
 
 const server = net.createServer((socket) => {
   let buffer = "";
