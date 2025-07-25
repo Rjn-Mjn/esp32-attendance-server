@@ -172,11 +172,13 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       !shift.OTStart &&
       scanTime.isBetween(checkInStart, checkInEnd, null, "[]")
     ) {
+      const timeScanned = scanTime.format("YYYY-MM-DD HH:mm:ss");
+
       await pool
         .request()
         .input("AccountID", sql.VarChar(100), AccountID)
         .input("ShiftID", sql.VarChar(100), shift.ShiftID)
-        .input("OTStart", sql.DateTime, scanTime.toDate())
+        .input("OTStart", sql.VarChar, timeScanned)
         .query(
           `UPDATE Attendance SET OTStart = @OTStart WHERE AccountID = @AccountID AND ShiftID = @ShiftID`
         );
@@ -185,23 +187,12 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       !shift.OTStart &&
       scanTime.isBetween(checkInEnd, checkOutStart, null, "[]")
     ) {
-      const localStart = new Date(
-        scanTime.year(),
-        scanTime.month(),
-        scanTime.date(),
-        scanTime.hour(),
-        scanTime.minute(),
-        scanTime.second()
-      );
+      const timeScanned = scanTime.format("YYYY-MM-DD HH:mm:ss");
       await pool
         .request()
         .input("AccountID", sql.VarChar(100), AccountID)
         .input("ShiftID", sql.VarChar(100), shift.ShiftID)
-        .input(
-          "OTStart",
-          sql.DateTime,
-          localStart.format("YYYY-MM-DD HH:mm:ss")
-        )
+        .input("OTStart", sql.VarChar, timeScanned)
         .query(
           `UPDATE Attendance SET OTStart = @OTStart WHERE AccountID = @AccountID AND ShiftID = @ShiftID`
         );
@@ -257,7 +248,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     const { OTStart, OTEnd } = statusSet.recordset[0];
     if (OTStart && OTEnd) {
       // Treat OTStart string as local without timezone shift
-      const rawStart = dayjs(OTStart).utc().format("YYYY-MM-DD HH:mm:ss");
+      const rawStart = dayjs(OTStart).utc(true).format("YYYY-MM-DD HH:mm:ss");
       const startObj = dayjs(rawStart, "YYYY-MM-DD HH:mm:ss");
       console.log("[DEBUG] OTStart (DB local interpreted):", startObj);
       console.log("[DEBUG] OTStart :", rawStart);
