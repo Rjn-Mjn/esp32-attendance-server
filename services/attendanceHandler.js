@@ -95,7 +95,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
     console.log("[DEBUG] AccountID:", AccountID);
 
     // 4. Fetch today's shift record
-    const { recordset } = await pool
+    const { recordset: shiftRecords } = await pool
       .request()
       .input("AccountID", sql.VarChar(100), AccountID)
       .input("date", sql.Date, scanDate).query(`
