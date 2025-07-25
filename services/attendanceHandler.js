@@ -15,10 +15,6 @@ dayjs.extend(customParseFormat);
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-// Set default timezone to Vietnam
-const vnTz = "Asia/Ho_Chi_Minh";
-dayjs.tz.setDefault(vnTz);
-
 const { poolPromise, sql } = require("../db/sql");
 
 // Log unrecognized scan
@@ -45,21 +41,27 @@ async function logUnrecognized(pool, UID, scanTimeDate, IPAddress, reason) {
 // Main attendance handler
 async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
   try {
-    const scanTime = dayjs(timestamp).tz(vnTz); // Convert incoming timestamp to Vietnam timezone
+    // 1. Parse and debug scan time
+    const scanTime = dayjs(timestamp).tz("Asia/Ho_Chi_Minh");
     console.log("[DEBUG] scanTime:", scanTime.format("YYYY-MM-DD HH:mm:ss"));
+    console.log("[DEBUG] scanTime:", scanTime.toDate());
+
     if (!scanTime.isValid()) {
       console.error("❌ Invalid timestamp:", timestamp);
       return;
     }
-
     const scanDate = scanTime.format("YYYY-MM-DD");
+    console.log("[DEBUG] scanDate:", scanDate);
+
     const pool = await poolPromise;
 
-    // Fetch CardID from UID
+    // 2. Check UID exists
+    console.log("[DEBUG] Checking UID:", UID);
     const { recordset: uidRecords } = await pool
       .request()
       .input("uid", sql.NVarChar(20), UID)
       .query("SELECT CardID FROM AttendanceCard WHERE UID = @uid");
+    console.log("[DEBUG] uidRecords:", uidRecords);
     if (uidRecords.length === 0) {
       await logUnrecognized(
         pool,
@@ -71,12 +73,14 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       return;
     }
     const cardID = uidRecords[0].CardID;
+    console.log("[DEBUG] cardID:", cardID);
 
-    // Fetch AccountID using CardID
+    // 3. Find account
     const { recordset: accountRecords } = await pool
       .request()
       .input("cardID", sql.VarChar(10), cardID)
       .query("SELECT AccountID FROM Account WHERE CardID = @cardID");
+    console.log("[DEBUG] accountRecords:", accountRecords);
     if (accountRecords.length === 0) {
       await logUnrecognized(
         pool,
@@ -88,8 +92,9 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       return;
     }
     const AccountID = accountRecords[0].AccountID;
+    console.log("[DEBUG] AccountID:", AccountID);
 
-    // Get all shifts for that day
+    // 4. Fetch today's shift record
     const { recordset } = await pool
       .request()
       .input("AccountID", sql.VarChar(100), AccountID)
@@ -100,144 +105,177 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
         JOIN ShiftType ST ON S.STID = ST.ST_ID
         WHERE A.AccountID = @AccountID AND A.date = @date AND A.isDeleted = 0
       `);
-
     console.log("[DEBUG] attendance recordset:", recordset);
-
-    // Filter shifts where either OTStart or OTEnd hasn't been set
-    const validShifts = recordset.filter((s) => !s.OTStart || !s.OTEnd);
-    if (validShifts.length === 0) {
+    if (recordset.length === 0) {
       await logUnrecognized(
         pool,
         UID,
         scanTime.toDate(),
         IPAddress,
-        "All shifts completed"
+        "No shift found"
       );
       return;
     }
+    const shift = recordset[0];
+    console.log("[DEBUG] shift data:", shift);
 
-    let chosenShift = null;
-    let minDistance = Infinity;
-
-    // Pick the shift that is nearest to scanTime
-    for (const shift of validShifts) {
-      const shiftStart = dayjs(
-        `${scanDate} ${dayjs(shift.StartTime).tz(vnTz).format("HH:mm:ss")}`
-      ).tz(vnTz);
-      const diff = Math.abs(scanTime.diff(shiftStart));
-      console.log("[DEBUG] Checking shift:", {
-        ShiftID: shift.ShiftID,
-        StartTime: shiftStart.format("YYYY-MM-DD HH:mm:ss"),
-        Diff: diff,
-      });
-      if (diff < minDistance) {
-        minDistance = diff;
-        chosenShift = shift;
-      }
-    }
-
-    if (!chosenShift) return;
-    console.log("[DEBUG] chosenShift:", chosenShift);
-
-    // Calculate shift start/end and check-in/check-out windows
-    const shiftStart = dayjs(
-      `${scanDate} ${dayjs(chosenShift.StartTime).tz(vnTz).format("HH:mm:ss")}`
-    ).tz(vnTz);
+    // 5. Compute durations
     const durationMinutes =
-      chosenShift.Duration.getUTCHours() * 60 +
-      chosenShift.Duration.getUTCMinutes();
+      shift.Duration.getUTCHours() * 60 + shift.Duration.getUTCMinutes();
     const intervalMinutes =
-      chosenShift.Interval.getUTCHours() * 60 +
-      chosenShift.Interval.getUTCMinutes();
-    const shiftEnd = shiftStart.add(durationMinutes, "minute");
-    const checkInStart = shiftStart.subtract(intervalMinutes, "minute");
-    const checkInEnd = shiftStart.add(intervalMinutes, "minute");
-    const checkOutStart = shiftEnd.subtract(intervalMinutes, "minute");
-    const checkOutDeadline = shiftEnd.add(intervalMinutes, "minute");
+      shift.Interval.getUTCHours() * 60 + shift.Interval.getUTCMinutes();
+    console.log(
+      "[DEBUG] durationMinutes, intervalMinutes:",
+      durationMinutes,
+      intervalMinutes
+    );
 
+    // 6. Build shiftStart and shiftEnd
+    const startTimeRaw = dayjs.utc(shift.StartTime).format("HH:mm:ss");
+    console.log("[DEBUG] startTimeRaw:", startTimeRaw);
+    const shiftStart = dayjs(
+      `${scanDate} ${startTimeRaw}`,
+      "YYYY-MM-DD HH:mm:ss"
+    ).tz("Asia/Ho_Chi_Minh");
     console.log(
       "[DEBUG] shiftStart:",
       shiftStart.format("YYYY-MM-DD HH:mm:ss")
     );
+    const shiftEnd = shiftStart.add(durationMinutes, "minute");
+    console.log("[DEBUG] shiftEnd:", shiftEnd.format("YYYY-MM-DD HH:mm:ss"));
+
+    // 7. Define check windows
+    const checkInStart = shiftStart.subtract(intervalMinutes, "minute");
+    const checkInEnd = shiftStart.add(intervalMinutes, "minute");
+    const checkOutStart = shiftEnd.subtract(intervalMinutes, "minute");
+    const checkOutDeadline = shiftEnd.add(intervalMinutes, "minute");
     console.log(
-      "[DEBUG] checkInStart:",
-      checkInStart.format("YYYY-MM-DD HH:mm:ss")
-    );
-    console.log(
-      "[DEBUG] checkInEnd:",
-      checkInEnd.format("YYYY-MM-DD HH:mm:ss")
-    );
-    console.log(
-      "[DEBUG] checkOutStart:",
-      checkOutStart.format("YYYY-MM-DD HH:mm:ss")
-    );
-    console.log(
-      "[DEBUG] checkOutDeadline:",
-      checkOutDeadline.format("YYYY-MM-DD HH:mm:ss")
+      "[DEBUG] checkInStart, checkInEnd, checkOutStart, checkOutDeadline:",
+      checkInStart.format("HH:mm:ss"),
+      checkInEnd.format("HH:mm:ss"),
+      checkOutStart.format("HH:mm:ss"),
+      checkOutDeadline.format("HH:mm:ss")
     );
 
     let updated = false;
 
-    // Update OTStart if within check-in range
+    // 8. Check-in
+    console.log(
+      "[DEBUG] scanTime.isBetween(checkInStart, checkInEnd):",
+      scanTime.isBetween(checkInStart, checkInEnd, null, "[]")
+    );
+    console.log(
+      "[DEBUG] scanTime.isBetween(checkInEnd, checkoutStart):",
+      scanTime.isBetween(checkInEnd, checkOutStart, null, "[]")
+    );
     if (
-      !chosenShift.OTStart &&
+      !shift.OTStart &&
       scanTime.isBetween(checkInStart, checkInEnd, null, "[]")
     ) {
-      console.log("[DEBUG] Check-in condition met, updating OTStart.");
       await pool
         .request()
         .input("AccountID", sql.VarChar(100), AccountID)
-        .input("ShiftID", sql.VarChar(100), chosenShift.ShiftID)
+        .input("ShiftID", sql.VarChar(100), shift.ShiftID)
         .input("OTStart", sql.DateTime, scanTime.toDate())
+        .query(
+          `UPDATE Attendance SET OTStart = @OTStart WHERE AccountID = @AccountID AND ShiftID = @ShiftID`
+        );
+      updated = true;
+    } else if (
+      !shift.OTStart &&
+      scanTime.isBetween(checkInEnd, checkOutStart, null, "[]")
+    ) {
+      const localStart = new Date(
+        scanTime.year(),
+        scanTime.month(),
+        scanTime.date(),
+        scanTime.hour(),
+        scanTime.minute(),
+        scanTime.second()
+      );
+      await pool
+        .request()
+        .input("AccountID", sql.VarChar(100), AccountID)
+        .input("ShiftID", sql.VarChar(100), shift.ShiftID)
+        .input(
+          "OTStart",
+          sql.DateTime,
+          localStart.format("YYYY-MM-DD HH:mm:ss")
+        )
         .query(
           `UPDATE Attendance SET OTStart = @OTStart WHERE AccountID = @AccountID AND ShiftID = @ShiftID`
         );
       updated = true;
     }
 
-    // Update OTEnd if within check-out range
+    // 9. Check-out
+    console.log(
+      "[DEBUG] scanTime.isAfter(checkOutStart):",
+      scanTime.isAfter(checkOutStart)
+    );
+    console.log(
+      "[DEBUG] scanTime.isBefore(checkOutDeadline):",
+      scanTime.isBefore(checkOutDeadline)
+    );
     if (
-      !chosenShift.OTEnd &&
-      scanTime.isBetween(checkOutStart, checkOutDeadline, null, "[]")
+      !shift.OTEnd &&
+      scanTime.isAfter(checkOutStart) &&
+      scanTime.isBefore(checkOutDeadline)
     ) {
-      console.log("[DEBUG] Check-out condition met, updating OTEnd.");
+      // Build a JS Date with local components to preserve local time
+      const localEnd = new Date(
+        scanTime.year(),
+        scanTime.month(),
+        scanTime.date(),
+        scanTime.hour(),
+        scanTime.minute(),
+        scanTime.second()
+      );
+      console.log("[DEBUG] localEnd for DB:", localEnd);
       await pool
         .request()
         .input("AccountID", sql.VarChar(100), AccountID)
-        .input("ShiftID", sql.VarChar(100), chosenShift.ShiftID)
-        .input("OTEnd", sql.DateTime, scanTime.toDate())
+        .input("ShiftID", sql.VarChar(100), shift.ShiftID)
+        .input(
+          "OTEnd",
+          sql.VarChar(19),
+          dayjs(localEnd).format("YYYY-MM-DD HH:mm:ss")
+        )
         .query(
-          `UPDATE Attendance SET OTEnd = @OTEnd WHERE AccountID = @AccountID AND ShiftID = @ShiftID`
+          `UPDATE Attendance SET OTEnd = @OTEnd WHERE AccountID = @AccountID AND ShiftID = @SHIFTID`
         );
       updated = true;
     }
 
-    // Determine if both OTStart and OTEnd exist to set attendance status
+    // 10. Determine status
     const statusSet = await pool
       .request()
       .input("AccountID", sql.VarChar(100), AccountID)
-      .input("ShiftID", sql.VarChar(100), chosenShift.ShiftID)
+      .input("ShiftID", sql.VarChar(100), shift.ShiftID)
       .query(
         `SELECT OTStart, OTEnd FROM Attendance WHERE AccountID = @AccountID AND ShiftID = @ShiftID`
       );
     const { OTStart, OTEnd } = statusSet.recordset[0];
-
-    console.log("[DEBUG] OTStart, OTEnd:", OTStart, OTEnd);
-
     if (OTStart && OTEnd) {
-      const rawStart = dayjs(OTStart).tz(vnTz);
-      const status = rawStart.isSameOrBefore(checkInEnd) ? "present" : "late";
+      // Treat OTStart string as local without timezone shift
+      const rawStart = dayjs(OTStart).utc().format("YYYY-MM-DD HH:mm:ss");
+      const startObj = dayjs(rawStart, "YYYY-MM-DD HH:mm:ss");
+      console.log("[DEBUG] OTStart (DB local interpreted):", startObj);
+      console.log("[DEBUG] OTStart :", rawStart);
+
+      const status = startObj.isSameOrBefore(checkInEnd) ? "present" : "late";
+      console.log("[DEBUG] determined status:", status);
       await pool
         .request()
         .input("AccountID", sql.VarChar(100), AccountID)
-        .input("ShiftID", sql.VarChar(100), chosenShift.ShiftID)
+        .input("ShiftID", sql.VarChar(100), shift.ShiftID)
         .input("status", sql.VarChar(50), status)
         .query(
           `UPDATE Attendance SET status = @status WHERE AccountID = @AccountID AND ShiftID = @ShiftID`
         );
     }
 
-    // Log the scan to AttendanceLog
+    // 11. Log to AttendanceLog
     await pool
       .request()
       .input("UID", sql.VarChar(20), UID)
@@ -245,8 +283,9 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       .input("IPAddress", sql.VarChar(45), IPAddress)
       .input("IsRecognized", sql.Bit, 1)
       .input("Note", sql.NVarChar(255), Note)
-      .query(`INSERT INTO AttendanceLog (UID, ScanTime, IPAddress, IsRecognized, Note)
-              VALUES (@UID, @ScanTime, @IPAddress, @IsRecognized, @Note)`);
+      .query(
+        `INSERT INTO AttendanceLog (UID, ScanTime, IPAddress, IsRecognized, Note) VALUES (@UID, @ScanTime, @IPAddress, @IsRecognized, @Note)`
+      );
 
     console.log(
       updated
