@@ -250,8 +250,8 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       // Treat OTStart string as local without timezone shift
       const rawStart = dayjs(OTStart).utc(true).format("YYYY-MM-DD HH:mm:ss");
       const startObj = dayjs(rawStart, "YYYY-MM-DD HH:mm:ss");
-      console.log("[DEBUG] OTStart (DB local interpreted):", startObj);
       console.log("[DEBUG] OTStart :", rawStart);
+      console.log("[DEBUG] OTStart (DB local interpreted):", startObj);
 
       const status = startObj.isSameOrBefore(checkInEnd) ? "present" : "late";
       console.log("[DEBUG] determined status:", status);
