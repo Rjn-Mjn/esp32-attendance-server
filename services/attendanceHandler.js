@@ -105,7 +105,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
         JOIN ShiftType ST ON S.STID = ST.ST_ID
         WHERE A.AccountID = @AccountID AND A.date = @date AND A.isDeleted = 0
       `);
-    console.log("[DEBUG] attendance recordset:", recordset);
+    console.log("[DEBUG] attendance recordset:", shiftRecords);
     if (recordset.length === 0) {
       await logUnrecognized(
         pool,
