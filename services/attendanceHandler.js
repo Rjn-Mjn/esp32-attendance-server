@@ -185,11 +185,23 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
       !shift.OTStart &&
       scanTime.isBetween(checkInEnd, checkOutStart, null, "[]")
     ) {
+      const localStart = new Date(
+        scanTime.year(),
+        scanTime.month(),
+        scanTime.date(),
+        scanTime.hour(),
+        scanTime.minute(),
+        scanTime.second()
+      );
       await pool
         .request()
         .input("AccountID", sql.VarChar(100), AccountID)
         .input("ShiftID", sql.VarChar(100), shift.ShiftID)
-        .input("OTStart", sql.DateTime, scanTime.toDate())
+        .input(
+          "OTStart",
+          sql.DateTime,
+          localStart.format("YYYY-MM-DD HH:mm:ss")
+        )
         .query(
           `UPDATE Attendance SET OTStart = @OTStart WHERE AccountID = @AccountID AND ShiftID = @ShiftID`
         );
@@ -224,7 +236,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
         .request()
         .input("AccountID", sql.VarChar(100), AccountID)
         .input("ShiftID", sql.VarChar(100), shift.ShiftID)
-        .input("OTEnd", sql.VarChar(19), shiftEnd.format("YYYY-MM-DD HH:mm:ss"))
+        .input("OTEnd", sql.VarChar(19), localEnd.format("YYYY-MM-DD HH:mm:ss"))
         .query(
           `UPDATE Attendance SET OTEnd = @OTEnd WHERE AccountID = @AccountID AND ShiftID = @SHIFTID`
         );
