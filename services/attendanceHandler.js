@@ -239,7 +239,7 @@ async function handleAttendance({ UID, timestamp, IPAddress, Note = null }) {
         .request()
         .input("AccountID", sql.VarChar(100), AccountID)
         .input("ShiftID", sql.VarChar(100), shift.ShiftID)
-        .input("OTEnd", sql.DateTime, timeScanned)
+        .input("OTEnd", sql.VarChar, timeScanned)
         .query(
           `UPDATE Attendance SET OTEnd = @OTEnd WHERE AccountID = @AccountID AND ShiftID = @SHIFTID`
         );
