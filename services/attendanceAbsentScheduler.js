@@ -51,7 +51,10 @@ async function markAbsentShifts() {
         "minute"
       );
 
-      if (!shift.OTStart && !shift.OTEnd && now.isAfter(shiftEndWithInterval)) {
+      if (
+        (!shift.OTStart || !shift.OTEnd) &&
+        now.isAfter(shiftEndWithInterval)
+      ) {
         console.log(
           `[ABSENT] Marking AccountID ${shift.AccountID}, ShiftID ${shift.ShiftID} as absent`
         );
