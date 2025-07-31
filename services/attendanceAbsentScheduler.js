@@ -30,7 +30,7 @@ async function markAbsentShifts() {
       FROM Attendance A
       JOIN Shift S ON A.ShiftID = S.ShiftID
       JOIN ShiftType ST ON S.STID = ST.ST_ID
-      WHERE A.status IS NULL AND A.isDeleted = 0
+      WHERE A.status = 'future' AND A.isDeleted = 0
     `);
 
     for (const shift of overdueShifts) {
