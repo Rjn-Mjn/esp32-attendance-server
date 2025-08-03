@@ -33,6 +33,8 @@ async function markAbsentShifts() {
       WHERE A.status = 'future' AND A.isDeleted = 0
     `);
 
+    console.log("[DEBUG] future shifts: ", overdueShifts);
+
     for (const shift of overdueShifts) {
       const shiftDate = dayjs(shift.date).format("YYYY-MM-DD");
       const startTime = dayjs.utc(shift.StartTime).format("HH:mm:ss");
@@ -50,6 +52,13 @@ async function markAbsentShifts() {
         durationMinutes + intervalMinutes,
         "minute"
       );
+
+      console.log("[DEBUG] shiftDate: ", shiftDate);
+      console.log("[DEBUG] startTime: ", startTime);
+      console.log("[DEBUG] shiftStart: ", shiftStart);
+      console.log("[DEBUG] durationMinutes: ", durationMinutes);
+      console.log("[DEBUG] intervalMinutes: ", intervalMinutes);
+      console.log("[DEBUG] shiftEndWithInterval: ", shiftEndWithInterval);
 
       if (
         (!shift.OTStart || !shift.OTEnd) &&
