@@ -2,7 +2,7 @@ const cron = require("node-cron");
 const markAbsentShifts = require("../services/attendanceAbsentScheduler");
 
 // Chạy mỗi 10 phút
-cron.schedule("*/1 * * * *", async () => {
+cron.schedule("*/5 * * * *", async () => {
   console.log("⏰ Cron Job: Running markAbsentShifts...");
   try {
     await markAbsentShifts();
