@@ -8,6 +8,7 @@ const config = {
   database: process.env.DB_NAME,
   options: {
     encrypt: false,
+    // useUTC: false,
     trustServerCertificate: true,
   },
 };
