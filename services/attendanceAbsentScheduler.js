@@ -80,7 +80,7 @@ async function markAbsentShifts() {
           .request()
           .input("AccountID", sql.VarChar(100), shift.AccountID)
           .input("ShiftID", sql.VarChar(100), shift.ShiftID)
-          .input("date", sql.date, shift.date)
+          .input("date", sql.Date, shift.date)
           .input("status", sql.VarChar(50), "absent")
           .query(
             `UPDATE Attendance SET status = @status WHERE AccountID = @AccountID AND ShiftID = @ShiftID AND date = @date`
