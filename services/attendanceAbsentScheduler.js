@@ -74,15 +74,16 @@ async function markAbsentShifts() {
         now.isAfter(shiftEndWithInterval)
       ) {
         console.log(
-          `[ABSENT] Marking AccountID ${shift.AccountID}, ShiftID ${shift.ShiftID} as absent`
+          `[ABSENT] Marking AccountID ${shift.AccountID}, ShiftID ${shift.ShiftID}, DATE ${shift.date} as absent`
         );
         await pool
           .request()
           .input("AccountID", sql.VarChar(100), shift.AccountID)
           .input("ShiftID", sql.VarChar(100), shift.ShiftID)
+          .input("date", sql.date, shift.date)
           .input("status", sql.VarChar(50), "absent")
           .query(
-            `UPDATE Attendance SET status = @status WHERE AccountID = @AccountID AND ShiftID = @ShiftID`
+            `UPDATE Attendance SET status = @status WHERE AccountID = @AccountID AND ShiftID = @ShiftID AND date = @date`
           );
       }
     }
