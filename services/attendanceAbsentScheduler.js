@@ -62,12 +62,12 @@ async function markAbsentShifts() {
         (!shift.OTStart || !shift.OTEnd) && now.isAfter(shiftEndWithInterval);
       console.log(check);
 
-      console.log("[DEBUG] shiftDate: ", shiftDate);
-      console.log("[DEBUG] startTime: ", startTime);
-      console.log("[DEBUG] shiftStart: ", shiftStart);
-      console.log("[DEBUG] durationMinutes: ", durationMinutes);
-      console.log("[DEBUG] intervalMinutes: ", intervalMinutes);
-      console.log("[DEBUG] shiftEndWithInterval: ", shiftEndWithInterval);
+      // console.log("[DEBUG] shiftDate: ", shiftDate);
+      // console.log("[DEBUG] startTime: ", startTime);
+      // console.log("[DEBUG] shiftStart: ", shiftStart);
+      // console.log("[DEBUG] durationMinutes: ", durationMinutes);
+      // console.log("[DEBUG] intervalMinutes: ", intervalMinutes);
+      // console.log("[DEBUG] shiftEndWithInterval: ", shiftEndWithInterval);
 
       if (
         (!shift.OTStart || !shift.OTEnd) &&
